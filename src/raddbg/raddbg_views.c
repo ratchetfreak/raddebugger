@@ -3810,7 +3810,9 @@ RD_VIEW_UI_FUNCTION_DEF(memory)
               UI_Signal peek_sig = ui_signal_from_box(peek_box);
               if(ui_hovering(peek_sig))
               {
-                rd_set_hover_eval(v2f32(peek_box->rect.x0, peek_box->rect.y1-2.f), casted_expr);
+                String8 peek_expr = str8f(scratch.arena, "rows(%S, dec(raw($)), hex(raw($)), oct(raw($)), bin(raw($)))",
+                              casted_expr);
+                rd_set_hover_eval(v2f32(peek_box->rect.x0, peek_box->rect.y1-2.f), peek_expr);
               }
               if(ui_clicked(peek_sig))
               {
