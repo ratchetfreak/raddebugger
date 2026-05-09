@@ -1416,7 +1416,14 @@ ev_string_from_simple_typed_eval(Arena *arena, EV_StringParams *params, E_Eval e
     case E_TypeKind_F64:{f64 = eval.value.f64;}goto f64_path;
     f64_path:;
     {
-      result = push_str8f(arena, "%.*f", params->min_digits ? params->min_digits : 16, f64);
+      if(params->radix == 16)
+      {
+        result = push_str8f(arena, "%+.*a", params->min_digits ? params->min_digits : 8, f64);
+      }
+      else
+      {
+        result = push_str8f(arena, "%+.*e", params->min_digits ? params->min_digits : 8, f64);
+      }
       U64 num_to_chop = 0;
       for(U64 num_trimmed = 0; num_trimmed < result.size; num_trimmed += 1)
       {

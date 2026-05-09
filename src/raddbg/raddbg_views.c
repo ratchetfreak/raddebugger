@@ -3736,35 +3736,76 @@ RD_VIEW_UI_FUNCTION_DEF(memory)
     {
       CFG_Node *view = cfg_node_from_id(rd_regs()->view);
       CFG_NodePtrList extra_peek_types = cfg_node_child_list_from_string(scratch.arena, view, str8_lit("peek_type"));
-      String8List peek_type_list = {0};
+      typedef struct eval_node{
+          
+          struct eval_node *next;
+          String8 string;
+          B8 integer;
+          B8 floatp;
+      } eval_node;
+      eval_node * first = NULL;
+      eval_node * last = NULL;
       if(rd_view_setting_b32_from_name(str8_lit("peek_as_unsigned")))
       {
-        str8_list_pushf(scratch.arena, &peek_type_list, "uint8");
-        str8_list_pushf(scratch.arena, &peek_type_list, "uint16");
-        str8_list_pushf(scratch.arena, &peek_type_list, "uint32");
-        str8_list_pushf(scratch.arena, &peek_type_list, "uint64");
+        eval_node* n = push_array(scratch.arena, eval_node, 1);
+        n->string = push_str8f(scratch.arena, "uint8");
+        n->integer = 1;
+        SLLQueuePush_NZ(NULL, first, last, n, next);
+        n = push_array(scratch.arena, eval_node, 1);
+        n->string = push_str8f(scratch.arena, "uint16");
+        n->integer = 1;
+        SLLQueuePush_NZ(NULL, first, last, n, next);
+        n = push_array(scratch.arena, eval_node, 1);
+        n->string = push_str8f(scratch.arena, "uint32");
+        n->integer = 1;
+        SLLQueuePush_NZ(NULL, first, last, n, next);
+        n = push_array(scratch.arena, eval_node, 1);
+        n->string = push_str8f(scratch.arena, "uint64");
+        n->integer = 1;
+        SLLQueuePush_NZ(NULL, first, last, n, next);
       }
       if(rd_view_setting_b32_from_name(str8_lit("peek_as_signed")))
       {
-        str8_list_pushf(scratch.arena, &peek_type_list, "int8");
-        str8_list_pushf(scratch.arena, &peek_type_list, "int16");
-        str8_list_pushf(scratch.arena, &peek_type_list, "int32");
-        str8_list_pushf(scratch.arena, &peek_type_list, "int64");
+        eval_node* n = push_array(scratch.arena, eval_node, 1);
+        n->string = push_str8f(scratch.arena, "int8");
+        n->integer = 1;
+        SLLQueuePush_NZ(NULL, first, last, n, next);
+        n = push_array(scratch.arena, eval_node, 1);
+        n->string = push_str8f(scratch.arena, "int16");
+        n->integer = 1;
+        SLLQueuePush_NZ(NULL, first, last, n, next);
+        n = push_array(scratch.arena, eval_node, 1);
+        n->string = push_str8f(scratch.arena, "int32");
+        n->integer = 1;
+        SLLQueuePush_NZ(NULL, first, last, n, next);
+        n = push_array(scratch.arena, eval_node, 1);
+        n->string = push_str8f(scratch.arena, "int64");
+        n->integer = 1;
+        SLLQueuePush_NZ(NULL, first, last, n, next);
       }
       if(rd_view_setting_b32_from_name(str8_lit("peek_as_float")))
       {
-        str8_list_pushf(scratch.arena, &peek_type_list, "float32");
-        str8_list_pushf(scratch.arena, &peek_type_list, "float64");
+        eval_node* n = push_array(scratch.arena, eval_node, 1);
+        n->string = push_str8f(scratch.arena, "float32");
+        n->floatp = 1;
+        SLLQueuePush_NZ(NULL, first, last, n, next);
+        n = push_array(scratch.arena, eval_node, 1);
+        n->string = push_str8f(scratch.arena, "float64");
+        n->floatp = 1;
+        SLLQueuePush_NZ(NULL, first, last, n, next);
       }
       for EachNode(n, CFG_NodePtrNode, extra_peek_types.first)
       {
-        str8_list_push(scratch.arena, &peek_type_list, n->v->first->string);
+        eval_node* ne = push_array(scratch.arena, eval_node, 1);
+        ne->string = (scratch.arena, n->v->first->string);
+        
+        SLLQueuePush_NZ(NULL, first, last, ne, next);
       }
       ui_set_next_pref_width(ui_children_sum(1));
       ui_row_begin();
       F32 x_off_px = 0;
       F32 x_max_px = dim_2f32(rect).x - scroll_bar_dim;
-      for EachNode(n, String8Node, peek_type_list.first)
+      for EachNode(n, eval_node, first)
       {
         String8 type_string = n->string;
         E_Eval type_eval = e_eval_from_string(type_string);
@@ -3810,9 +3851,26 @@ RD_VIEW_UI_FUNCTION_DEF(memory)
               UI_Signal peek_sig = ui_signal_from_box(peek_box);
               if(ui_hovering(peek_sig))
               {
-                String8 peek_expr = str8f(scratch.arena, "rows(%S, dec(raw($)), hex(raw($)), oct(raw($)), bin(raw($)))",
+                if(n->integer)
+                {
+                  String8 peek_expr = str8f(scratch.arena, "rows(%S, dec(raw($)), hex(raw($)), oct(raw($)), bin(raw($)))",
                               casted_expr);
-                rd_set_hover_eval(v2f32(peek_box->rect.x0, peek_box->rect.y1-2.f), peek_expr);
+                              
+                  rd_set_hover_eval(v2f32(peek_box->rect.x0, peek_box->rect.y1-2.f), peek_expr);
+                }
+                else if(n->floatp)
+                {
+                  String8 peek_expr = str8f(scratch.arena, "rows(%S, dec(raw($)), hex(raw($)))",
+                              casted_expr);
+                              
+                  rd_set_hover_eval(v2f32(peek_box->rect.x0, peek_box->rect.y1-2.f), peek_expr);
+                }else
+                {
+                  String8 peek_expr = casted_expr;
+                              
+                  rd_set_hover_eval(v2f32(peek_box->rect.x0, peek_box->rect.y1-2.f), peek_expr);
+                }
+                
               }
               if(ui_clicked(peek_sig))
               {
